@@ -2,8 +2,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
-import { JoyStick } from './joystick.js';
-
 import { config } from './config.js';
 import { setupScene } from './sceneSetup.js';
 import { setupPhysicsWorld, applyPlanetaryGravity } from './physics.js';
@@ -56,8 +54,6 @@ async function init() {
 
     // ... (player controls and animation loop start are unchanged) ...
     initPlayerControls(player.body);
-     // NEW: Create the joystick for mobile controls
-    new JoyStick();
     animate();
 }
 
