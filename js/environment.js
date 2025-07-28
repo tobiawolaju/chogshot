@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { config } from './config.js';
 
 let cloudClusters = [];
+// This will hold a reference to our background material so we can update it later.
+let backgroundMaterial;
 
 /**
  * Initializes all environmental elements like lighting, stars, and clouds.
@@ -28,6 +30,18 @@ export function updateEnvironment(delta) {
     });
 }
 
+/**
+ * Updates any environment elements that depend on screen size.
+ * This function should be called from the main 'resize' event listener.
+ */
+export function updateEnvironmentOnResize() {
+    if (backgroundMaterial) {
+        // Update the shader uniform with the new window height
+        backgroundMaterial.uniforms.vh.value = window.innerHeight;
+    }
+}
+
+
 // --- Internal Helper Functions ---
 
 function setupLighting(scene) {
@@ -48,7 +62,8 @@ function setupLighting(scene) {
 }
 
 function setupBackground(scene) {
-    const bgMat = new THREE.ShaderMaterial({
+    // Assign the material to our module-level variable so it can be accessed later.
+    backgroundMaterial = new THREE.ShaderMaterial({
         vertexShader: `void main() { gl_Position = vec4(position, 1.0); }`,
         fragmentShader: `
             uniform vec3 topColor, middleColor, bottomColor; uniform float vh;
@@ -62,11 +77,12 @@ function setupBackground(scene) {
             topColor: { value: new THREE.Color(0xE4EFFF) },
             middleColor: { value: new THREE.Color(0xFFFFFF) },
             bottomColor: { value: new THREE.Color(0xF7DDFF) },
-            vh: { value: window.innerHeight }
+            vh: { value: window.innerHeight } // Initial value
         },
         depthWrite: false, depthTest: false, side: THREE.DoubleSide
     });
-    scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), bgMat));
+    // Use the material for the background mesh.
+    scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), backgroundMaterial));
 }
 
 function setupStars(scene) {

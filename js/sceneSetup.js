@@ -2,6 +2,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { config } from './config.js';
+// NEW: Import the resize handler from environment.js
+import { updateEnvironmentOnResize } from './environment.js';
 
 /**
  * Initializes and returns the core Three.js components.
@@ -25,9 +27,15 @@ export function setupScene() {
 
     // Handle window resizing
     window.addEventListener('resize', () => {
+        // Update camera
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
+
+        // Update renderer
         renderer.setSize(window.innerWidth, window.innerHeight);
+        
+        // NEW: Update the background shader
+        updateEnvironmentOnResize();
     });
 
     return { scene, camera, renderer, controls };
