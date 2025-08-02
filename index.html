@@ -33,36 +33,54 @@ document.body.appendChild(renderer.domElement);
 
 const sensorDisplay = document.getElementById("sensorList");
 
-// Sensor connections
+// Humanoid structure and constant limb lengths
 const sensorLinks = [
-  ['a', 'b'],
-  ['b', 'c'],
-  ['c', 'd']
+  ['shoulder', 'elbow'],
+  ['elbow', 'wrist'],
+  ['shoulder', 'torso'],
+  ['torso', 'hip'],
+  ['hip', 'knee'],
+  ['knee', 'ankle']
 ];
 
-// Simulate real-world sensor streaming
+const limbLengths = {
+  shoulder_elbow: 0.5,
+  elbow_wrist: 0.5,
+  shoulder_torso: 0.4,
+  torso_hip: 0.3,
+  hip_knee: 0.5,
+  knee_ankle: 0.4
+};
+
+// Constrained dummy generator
 function sensorData() {
+  const shoulder = new THREE.Vector3(0, 1.5, 0);
+
+  const elbow = shoulder.clone().add(new THREE.Vector3(
+    Math.sin(Date.now() * 0.001) * 0.5,
+    -limbLengths.shoulder_elbow,
+    0
+  ).normalize().multiplyScalar(limbLengths.shoulder_elbow));
+
+  const wrist = elbow.clone().add(new THREE.Vector3(
+    Math.sin(Date.now() * 0.001 + 1),
+    -1,
+    0.3
+  ).normalize().multiplyScalar(limbLengths.elbow_wrist));
+
+  const torso = shoulder.clone().add(new THREE.Vector3(0, -limbLengths.shoulder_torso, 0));
+  const hip = torso.clone().add(new THREE.Vector3(0, -limbLengths.torso_hip, 0));
+  const knee = hip.clone().add(new THREE.Vector3(0.1 * Math.sin(Date.now() * 0.001 + 2), -1, 0.2).normalize().multiplyScalar(limbLengths.hip_knee));
+  const ankle = knee.clone().add(new THREE.Vector3(0, -1, 0.4).normalize().multiplyScalar(limbLengths.knee_ankle));
+
   return {
-    a: new THREE.Vector3(
-      Math.sin(Date.now() * 0.001) * 0.5,
-      1.5,
-      0
-    ),
-    b: new THREE.Vector3(
-      0.5 + Math.sin(Date.now() * 0.001 + 1) * 0.3,
-      1.0,
-      0.2
-    ),
-    c: new THREE.Vector3(
-      0.8 + Math.sin(Date.now() * 0.001 + 2) * 0.2,
-      0.5,
-      -0.2
-    ),
-    d: new THREE.Vector3(
-      0.6 + Math.cos(Date.now() * 0.001) * 0.2,
-      0.2,
-      0.4
-    )
+    shoulder,
+    elbow,
+    wrist,
+    torso,
+    hip,
+    knee,
+    ankle
   };
 }
 
@@ -77,7 +95,7 @@ function createPose() {
   sensorPoints = {};
   jointLines = [];
 
-  const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xff69b4 }); // pink
+  const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xff69b4 });
   const pointGeometry = new THREE.SphereGeometry(0.05);
 
   sensorDisplay.innerHTML = '<strong>Sensors:</strong><br>';
@@ -87,11 +105,10 @@ function createPose() {
     point.position.copy(pos);
     scene.add(point);
     sensorPoints[name] = point;
-
     sensorDisplay.innerHTML += `• ${name}: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})<br>`;
   }
 
-  const lineMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff }); // blue
+  const lineMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff });
   for (const [a, b] of sensorLinks) {
     const points = [sensorPoints[a].position, sensorPoints[b].position];
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
