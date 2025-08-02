@@ -33,24 +33,36 @@ document.body.appendChild(renderer.domElement);
 
 const sensorDisplay = document.getElementById("sensorList");
 
+// Sensor connections
 const sensorLinks = [
-  ['shoulder', 'elbow'],
-  ['elbow', 'wrist'],
-  ['shoulder', 'torso'],
-  ['torso', 'hip'],
-  ['hip', 'knee'],
-  ['knee', 'ankle']
+  ['a', 'b'],
+  ['b', 'c'],
+  ['c', 'd']
 ];
 
-function generateSensorReadings() {
+// Simulate real-world sensor streaming
+function sensorData() {
   return {
-    shoulder: new THREE.Vector3(0, 1.5, 0),
-    elbow: new THREE.Vector3(0.5, 1, 0),
-    wrist: new THREE.Vector3(0.8, 0.5, 0),
-    torso: new THREE.Vector3(0, 1.2, 0),
-    hip: new THREE.Vector3(0, 0.9, 0),
-    knee: new THREE.Vector3(0, 0.5, 0.2),
-    ankle: new THREE.Vector3(0, 0.1, 0.4)
+    a: new THREE.Vector3(
+      Math.sin(Date.now() * 0.001) * 0.5,
+      1.5,
+      0
+    ),
+    b: new THREE.Vector3(
+      0.5 + Math.sin(Date.now() * 0.001 + 1) * 0.3,
+      1.0,
+      0.2
+    ),
+    c: new THREE.Vector3(
+      0.8 + Math.sin(Date.now() * 0.001 + 2) * 0.2,
+      0.5,
+      -0.2
+    ),
+    d: new THREE.Vector3(
+      0.6 + Math.cos(Date.now() * 0.001) * 0.2,
+      0.2,
+      0.4
+    )
   };
 }
 
@@ -58,7 +70,7 @@ let sensorPoints = {};
 let jointLines = [];
 
 function createPose() {
-  const sensors = generateSensorReadings();
+  const sensors = sensorData();
 
   Object.values(sensorPoints).forEach(p => scene.remove(p));
   jointLines.forEach(l => scene.remove(l));
@@ -76,7 +88,7 @@ function createPose() {
     scene.add(point);
     sensorPoints[name] = point;
 
-    sensorDisplay.innerHTML += `• ${name}<br>`;
+    sensorDisplay.innerHTML += `• ${name}: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})<br>`;
   }
 
   const lineMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff }); // blue
@@ -89,15 +101,12 @@ function createPose() {
   }
 }
 
-createPose();
-
 function animate() {
   requestAnimationFrame(animate);
+  createPose();
   renderer.render(scene, camera);
 }
 animate();
-
-setInterval(createPose, 2000);
 
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
