@@ -33,54 +33,85 @@ document.body.appendChild(renderer.domElement);
 
 const sensorDisplay = document.getElementById("sensorList");
 
-// Humanoid structure and constant limb lengths
 const sensorLinks = [
-  ['shoulder', 'elbow'],
-  ['elbow', 'wrist'],
-  ['shoulder', 'torso'],
-  ['torso', 'hip'],
-  ['hip', 'knee'],
-  ['knee', 'ankle']
+  ['left_shoulder', 'left_elbow'],
+  ['left_elbow', 'left_wrist'],
+  ['right_shoulder', 'right_elbow'],
+  ['right_elbow', 'right_wrist'],
+  ['left_shoulder', 'spine'],
+  ['right_shoulder', 'spine'],
+  ['spine', 'left_hip'],
+  ['spine', 'right_hip'],
+  ['left_hip', 'left_knee'],
+  ['left_knee', 'left_ankle'],
+  ['right_hip', 'right_knee'],
+  ['right_knee', 'right_ankle']
 ];
 
 const limbLengths = {
-  shoulder_elbow: 0.5,
-  elbow_wrist: 0.5,
-  shoulder_torso: 0.4,
-  torso_hip: 0.3,
-  hip_knee: 0.5,
-  knee_ankle: 0.4
+  upper_arm: 0.4,
+  lower_arm: 0.4,
+  upper_leg: 0.5,
+  lower_leg: 0.4,
+  shoulder_spine: 0.2,
+  spine_hip: 0.3
 };
 
-// Constrained dummy generator
 function sensorData() {
-  const shoulder = new THREE.Vector3(0, 1.5, 0);
+  const spine = new THREE.Vector3(0, 1.3, 0);
 
-  const elbow = shoulder.clone().add(new THREE.Vector3(
-    Math.sin(Date.now() * 0.001) * 0.5,
-    -limbLengths.shoulder_elbow,
-    0
-  ).normalize().multiplyScalar(limbLengths.shoulder_elbow));
+  const leftShoulder = spine.clone().add(new THREE.Vector3(-0.2, limbLengths.shoulder_spine, 0));
+  const rightShoulder = spine.clone().add(new THREE.Vector3(0.2, limbLengths.shoulder_spine, 0));
 
-  const wrist = elbow.clone().add(new THREE.Vector3(
-    Math.sin(Date.now() * 0.001 + 1),
-    -1,
-    0.3
-  ).normalize().multiplyScalar(limbLengths.elbow_wrist));
+  const leftElbow = leftShoulder.clone().add(new THREE.Vector3(
+    Math.sin(Date.now() * 0.001) * 0.2, -1, 0.2
+  ).normalize().multiplyScalar(limbLengths.upper_arm));
 
-  const torso = shoulder.clone().add(new THREE.Vector3(0, -limbLengths.shoulder_torso, 0));
-  const hip = torso.clone().add(new THREE.Vector3(0, -limbLengths.torso_hip, 0));
-  const knee = hip.clone().add(new THREE.Vector3(0.1 * Math.sin(Date.now() * 0.001 + 2), -1, 0.2).normalize().multiplyScalar(limbLengths.hip_knee));
-  const ankle = knee.clone().add(new THREE.Vector3(0, -1, 0.4).normalize().multiplyScalar(limbLengths.knee_ankle));
+  const leftWrist = leftElbow.clone().add(new THREE.Vector3(
+    0.2, -1, 0
+  ).normalize().multiplyScalar(limbLengths.lower_arm));
+
+  const rightElbow = rightShoulder.clone().add(new THREE.Vector3(
+    Math.sin(Date.now() * 0.001 + 1), -1, -0.2
+  ).normalize().multiplyScalar(limbLengths.upper_arm));
+
+  const rightWrist = rightElbow.clone().add(new THREE.Vector3(
+    0.2, -1, 0
+  ).normalize().multiplyScalar(limbLengths.lower_arm));
+
+  const leftHip = spine.clone().add(new THREE.Vector3(-0.15, -limbLengths.spine_hip, 0));
+  const rightHip = spine.clone().add(new THREE.Vector3(0.15, -limbLengths.spine_hip, 0));
+
+  const leftKnee = leftHip.clone().add(new THREE.Vector3(
+    0, -1, 0.1
+  ).normalize().multiplyScalar(limbLengths.upper_leg));
+
+  const leftAnkle = leftKnee.clone().add(new THREE.Vector3(
+    0, -1, 0.2
+  ).normalize().multiplyScalar(limbLengths.lower_leg));
+
+  const rightKnee = rightHip.clone().add(new THREE.Vector3(
+    0, -1, -0.1
+  ).normalize().multiplyScalar(limbLengths.upper_leg));
+
+  const rightAnkle = rightKnee.clone().add(new THREE.Vector3(
+    0, -1, -0.2
+  ).normalize().multiplyScalar(limbLengths.lower_leg));
 
   return {
-    shoulder,
-    elbow,
-    wrist,
-    torso,
-    hip,
-    knee,
-    ankle
+    left_shoulder: leftShoulder,
+    right_shoulder: rightShoulder,
+    left_elbow: leftElbow,
+    right_elbow: rightElbow,
+    left_wrist: leftWrist,
+    right_wrist: rightWrist,
+    spine: spine,
+    left_hip: leftHip,
+    right_hip: rightHip,
+    left_knee: leftKnee,
+    right_knee: rightKnee,
+    left_ankle: leftAnkle,
+    right_ankle: rightAnkle
   };
 }
 
