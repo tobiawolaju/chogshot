@@ -3,14 +3,27 @@
   <meta charset="UTF-8" />
   <title>Robot Pose Visualization</title>
   <style>
-    body { margin: 0; overflow: hidden; }
+    body { margin: 0; overflow: hidden; background-color: white; }
     canvas { display: block; }
+    #sensorList {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(255, 255, 255, 0.9);
+      color: black;
+      font-family: monospace;
+      padding: 8px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
   </style>
 </head>
 <body>
+  <div id="sensorList"></div>
   <script type="module">
     import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.158/build/three.module.js';const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x111111);
+scene.background = new THREE.Color(0xffffff);
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
 camera.position.set(0, 2, 5);
 
@@ -18,7 +31,8 @@ const renderer = new THREE.WebGLRenderer();
 renderer.setSize(window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
-// Dummy sensor hierarchy
+const sensorDisplay = document.getElementById("sensorList");
+
 const sensorLinks = [
   ['shoulder', 'elbow'],
   ['elbow', 'wrist'],
@@ -28,7 +42,6 @@ const sensorLinks = [
   ['knee', 'ankle']
 ];
 
-// Generate dummy positions for sensors
 function generateSensorReadings() {
   return {
     shoulder: new THREE.Vector3(0, 1.5, 0),
@@ -47,25 +60,26 @@ let jointLines = [];
 function createPose() {
   const sensors = generateSensorReadings();
 
-  // Clear previous
   Object.values(sensorPoints).forEach(p => scene.remove(p));
   jointLines.forEach(l => scene.remove(l));
   sensorPoints = {};
   jointLines = [];
 
-  // Create spheres for each sensor
-  const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+  const pointMaterial = new THREE.MeshBasicMaterial({ color: 0xff69b4 }); // pink
   const pointGeometry = new THREE.SphereGeometry(0.05);
+
+  sensorDisplay.innerHTML = '<strong>Sensors:</strong><br>';
 
   for (const [name, pos] of Object.entries(sensors)) {
     const point = new THREE.Mesh(pointGeometry, pointMaterial);
     point.position.copy(pos);
     scene.add(point);
     sensorPoints[name] = point;
+
+    sensorDisplay.innerHTML += `• ${name}<br>`;
   }
 
-  // Connect joints with lines
-  const lineMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 });
+  const lineMaterial = new THREE.LineBasicMaterial({ color: 0x0000ff }); // blue
   for (const [a, b] of sensorLinks) {
     const points = [sensorPoints[a].position, sensorPoints[b].position];
     const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -83,7 +97,6 @@ function animate() {
 }
 animate();
 
-// Optional: Regenerate every 2 seconds to simulate dynamic pose
 setInterval(createPose, 2000);
 
 window.addEventListener('resize', () => {
