@@ -2,13 +2,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Robot Pose 3js</title>
+  <title>Humanoid Pose Viewer</title>
   <style>
     body {
       margin: 0;
-      background: white;
-      font-family: sans-serif;
-      overflow: hidden;
+      background-color: white;
+      font-family: Arial, sans-serif;
     }
     #sensorList {
       position: absolute;
@@ -17,121 +16,92 @@
       background: rgba(255, 255, 255, 0.8);
       padding: 10px;
       border-radius: 5px;
-      font-size: 12px;
-      max-height: 90vh;
-      overflow-y: auto;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
   <div id="sensorList"></div>
-  <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
-    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/controls/OrbitControls.js';const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
-camera.position.set(0, 2, 5);
+  <script src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.min.js"></script>
+  <script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);const sensorListDiv = document.getElementById("sensorList");
 
-const renderer = new THREE.WebGLRenderer();
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.body.appendChild(renderer.domElement);
-
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.dampingFactor = 0.1;
-controls.enableZoom = true;
-controls.enablePan = true;
-
-const sensorListDiv = document.getElementById("sensorList");
-
-const sensorNames = [
-  "spine",
-  "leftShoulder", "leftElbow", "leftWrist",
-  "rightShoulder", "rightElbow", "rightWrist",
-  "leftHip", "leftKnee", "leftAnkle",
-  "rightHip", "rightKnee", "rightAnkle"
-];
-
-const sensorHierarchy = {
-  spine: ["leftShoulder", "rightShoulder", "leftHip", "rightHip"],
-  leftShoulder: ["leftElbow"],
-  leftElbow: ["leftWrist"],
-  rightShoulder: ["rightElbow"],
-  rightElbow: ["rightWrist"],
-  leftHip: ["leftKnee"],
-  leftKnee: ["leftAnkle"],
-  rightHip: ["rightKnee"],
-  rightKnee: ["rightAnkle"]
-};
-
-const limbLengths = {
-  spine: 0.5,
-  leftShoulder: 0.25,
-  leftElbow: 0.25,
-  rightShoulder: 0.25,
-  rightElbow: 0.25,
-  leftHip: 0.5,
-  leftKnee: 0.5,
-  rightHip: 0.5,
-  rightKnee: 0.5
+const sensorData = {
+  head: { parent: "spine", length: 0.2 },
+  leftShoulder: { parent: "spine", length: 0.2 },
+  rightShoulder: { parent: "spine", length: 0.2 },
+  leftElbow: { parent: "leftShoulder", length: 0.3 },
+  rightElbow: { parent: "rightShoulder", length: 0.3 },
+  leftWrist: { parent: "leftElbow", length: 0.25 },
+  rightWrist: { parent: "rightElbow", length: 0.25 },
+  spine: { parent: null, length: 0 },
+  leftHip: { parent: "spine", length: 0.25 },
+  rightHip: { parent: "spine", length: 0.25 },
+  leftKnee: { parent: "leftHip", length: 0.4 },
+  rightKnee: { parent: "rightHip", length: 0.4 },
+  leftAnkle: { parent: "leftKnee", length: 0.4 },
+  rightAnkle: { parent: "rightKnee", length: 0.4 },
 };
 
 const sensors = {};
-const spheres = {};
 const lines = [];
 
-const pink = new THREE.MeshBasicMaterial({ color: 0xff69b4 });
-const blue = new THREE.LineBasicMaterial({ color: 0x0000ff });
+function generatePose() {
+  const positions = {};
+  const root = new THREE.Vector3(0, 1, 0); // spine
+  positions["spine"] = root;
 
-function createSensor(name) {
-  const geometry = new THREE.SphereGeometry(0.05, 16, 16);
-  const sphere = new THREE.Mesh(geometry, pink);
-  scene.add(sphere);
-  spheres[name] = sphere;
-  sensors[name] = new THREE.Vector3();
+  for (let name in sensorData) {
+    const sensor = sensorData[name];
+    if (sensor.parent) {
+      const parentPos = positions[sensor.parent];
+      const dir = new THREE.Vector3(
+        Math.random() * 2 - 1,
+        Math.random() * 2 - 1,
+        Math.random() * 2 - 1
+      ).normalize();
+      const pos = parentPos.clone().add(dir.multiplyScalar(sensor.length));
+      positions[name] = pos;
+    }
+  }
+
+  return positions;
 }
 
-sensorNames.forEach(createSensor);
+function updateSensors(pose) {
+  sensorListDiv.innerHTML = "<strong>Sensors:</strong><br>";
 
-function updateSensorData() {
-  const base = new THREE.Vector3(0, 1.0, 0); // spine center
-  sensors.spine.copy(base);
+  for (let name in pose) {
+    const pos = pose[name];
 
-  // Shoulders
-  sensors.leftShoulder.copy(base.clone().add(new THREE.Vector3(-0.3, 0.3, 0)));
-  sensors.rightShoulder.copy(base.clone().add(new THREE.Vector3(0.3, 0.3, 0)));
+    if (!sensors[name]) {
+      const geometry = new THREE.SphereGeometry(0.025, 16, 16);
+      const material = new THREE.MeshBasicMaterial({ color: 0xff69b4 });
+      const sphere = new THREE.Mesh(geometry, material);
+      scene.add(sphere);
+      sensors[name] = sphere;
+    }
 
-  // Arms
-  sensors.leftElbow.copy(sensors.leftShoulder.clone().add(new THREE.Vector3(0, -limbLengths.leftShoulder, 0)));
-  sensors.leftWrist.copy(sensors.leftElbow.clone().add(new THREE.Vector3(0, -limbLengths.leftElbow, 0)));
-  sensors.rightElbow.copy(sensors.rightShoulder.clone().add(new THREE.Vector3(0, -limbLengths.rightShoulder, 0)));
-  sensors.rightWrist.copy(sensors.rightElbow.clone().add(new THREE.Vector3(0, -limbLengths.rightElbow, 0)));
+    sensors[name].position.copy(pos);
+    sensorListDiv.innerHTML += `${name}: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})<br>`;
+  }
 
-  // Hips
-  sensors.leftHip.copy(base.clone().add(new THREE.Vector3(-0.2, -0.3, 0)));
-  sensors.rightHip.copy(base.clone().add(new THREE.Vector3(0.2, -0.3, 0)));
-
-  // Legs
-  sensors.leftKnee.copy(sensors.leftHip.clone().add(new THREE.Vector3(0, -limbLengths.leftHip, 0)));
-  sensors.leftAnkle.copy(sensors.leftKnee.clone().add(new THREE.Vector3(0, -limbLengths.leftKnee, 0)));
-  sensors.rightKnee.copy(sensors.rightHip.clone().add(new THREE.Vector3(0, -limbLengths.rightHip, 0)));
-  sensors.rightAnkle.copy(sensors.rightKnee.clone().add(new THREE.Vector3(0, -limbLengths.rightKnee, 0)));
-
-  sensorListDiv.innerHTML = "<strong>Sensor Positions</strong><br><br>" +
-    sensorNames.map(n => `${n}: (${sensors[n].x.toFixed(2)}, ${sensors[n].y.toFixed(2)}, ${sensors[n].z.toFixed(2)})`).join("<br>");
-}
-
-function drawLines() {
+  // Remove old lines
   lines.forEach(line => scene.remove(line));
   lines.length = 0;
 
-  for (const parent in sensorHierarchy) {
-    const children = sensorHierarchy[parent];
-    for (const child of children) {
+  for (let name in sensorData) {
+    const sensor = sensorData[name];
+    if (sensor.parent && pose[name] && pose[sensor.parent]) {
       const geometry = new THREE.BufferGeometry().setFromPoints([
-        sensors[parent],
-        sensors[child]
+        pose[sensor.parent], pose[name]
       ]);
-      const line = new THREE.Line(geometry, blue);
+      const material = new THREE.LineBasicMaterial({ color: 0x0000ff });
+      const line = new THREE.Line(geometry, material);
       scene.add(line);
       lines.push(line);
     }
@@ -140,21 +110,18 @@ function drawLines() {
 
 function animate() {
   requestAnimationFrame(animate);
-  controls.update();
-  updateSensorData();
-  drawLines();
-  for (const name in spheres) {
-    spheres[name].position.copy(sensors[name]);
-  }
   renderer.render(scene, camera);
 }
 
+function updatePose() {
+  const pose = generatePose();
+  updateSensors(pose);
+}
+
+camera.position.z = 2.5;
+
+setInterval(updatePose, 2000);
 animate();
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
 
   </script>
 </body>
